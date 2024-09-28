@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model admin {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  password String
+}
+
+model categories {
+  id                                          Int                 @id @default(autoincrement())
+  name                                        String              @unique @db.VarChar(75)
+  description                                 String?
+  slug                                        String?             @db.VarChar(100)
+  status                                      Boolean?            @default(true)
+  category_parent_id                          Int?
+  categories                                  categories?         @relation("categoriesTocategories", fields: [category_parent_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  children_categories                         categories[]        @relation("categoriesTocategories")
+  discount_category                           discount_category[]
+  products_products_category_id_2Tocategories products[]          @relation("products_category_id_2Tocategories")
+  products_products_category_id_3Tocategories products[]          @relation("products_category_id_3Tocategories")
+  products_products_category_idTocategories   products[]          @relation("products_category_idTocategories")
+
+  @@index([category_parent_id])
+}
+
+model discount_category {
+  id          Int        @id @default(autoincrement())
+  category_id Int
+  discount_id Int
+  categories  categories @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  discounts   discounts  @relation(fields: [discount_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([category_id])
+  @@index([discount_id])
+}
+
+model discount_product {
+  id          Int       @id @default(autoincrement())
+  discount_id Int
+  product_id  Int
+  discounts   discounts @relation(fields: [discount_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products    products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([discount_id])
+  @@index([product_id])
+}
+
+model discount_user {
+  id          Int       @id @default(autoincrement())
+  user_id     Int
+  discount_id Int
+  discounts   discounts @relation(fields: [discount_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([discount_id])
+  @@index([user_id])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model discounts {
+  id                    Int                 @id @default(autoincrement())
+  name                  String              @unique @db.VarChar(100)
+  code                  String              @unique @db.VarChar(15)
+  type                  discount_type
+  value                 Int
+  min_purchase          Int?
+  max_discount          Int?
+  min_quantity          Int?
+  start_date            DateTime?           @db.Timestamp(6)
+  end_date              DateTime?           @db.Timestamp(6)
+  usage_limit           Int?
+  used_count            Int?                @default(0)
+  status                discount_status?    @default(inactive)
+  created_at            DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?           @default(now()) @db.Timestamp(6)
+  applies_to_products   Boolean?            @default(false)
+  applies_to_categories Boolean?            @default(false)
+  specific_users_only   Boolean?            @default(false)
+  applies_to_shipping   Boolean?            @default(false)
+  discount_category     discount_category[]
+  discount_product      discount_product[]
+  discount_user         discount_user[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model payment_methods {
+  id              Int            @id @default(autoincrement())
+  provider        String         @unique @db.VarChar(45)
+  transaction_fee Decimal        @db.Decimal(5, 2)
+  status          Boolean?       @default(true)
+  transactions    transactions[]
+}
+
+model product_tags {
+  id         Int      @id @default(autoincrement())
+  product_id Int
+  tag_id     Int
+  products   products @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tags       tags     @relation(fields: [tag_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([product_id])
+  @@index([tag_id])
+}
+
+model products {
+  id                                            Int                        @id @default(autoincrement())
+  name                                          String                     @unique @db.VarChar
+  long_desc                                     String                     @db.VarChar
+  short_desc                                    String?
+  category_id                                   Int
+  category_id_2                                 Int?
+  category_id_3                                 Int?
+  status                                        Boolean?                   @default(true)
+  supplier_id                                   Int
+  discount_product                              discount_product[]
+  product_shipping_methods                      product_shipping_methods[]
+  product_tags                                  product_tags[]
+  categories_products_category_id_2Tocategories categories?                @relation("products_category_id_2Tocategories", fields: [category_id_2], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  categories_products_category_id_3Tocategories categories?                @relation("products_category_id_3Tocategories", fields: [category_id_3], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  categories_products_category_idTocategories   categories                 @relation("products_category_idTocategories", fields: [category_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  supplier                                      suppliers                  @relation(fields: [supplier_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  reviews                                       reviews[]
+  transaction_items                             transaction_items[]
+  variants                                      variants[]
+
+  @@index([category_id_2])
+  @@index([category_id_3])
+  @@index([category_id])
+  @@index([supplier_id])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model reviews {
+  id          Int       @id @default(autoincrement())
+  product_id  Int
+  user_id     Int
+  rating      Int?
+  review_text String?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  products    products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([product_id])
+  @@index([user_id])
+}
+
+model shipping_methods {
+  id                       Int                        @id @default(autoincrement())
+  option                   String                     @unique @db.VarChar(75)
+  status                   Boolean?                   @default(true)
+  product_shipping_methods product_shipping_methods[]
+  transactions             transactions[]
+}
+
+model suppliers {
+  id       Int        @id @default(autoincrement())
+  name     String?    @unique @db.VarChar(255)
+  products products[]
+}
+
+model transaction_items {
+  id             Int          @id @default(autoincrement())
+  transaction_id Int
+  product_id     Int
+  quantity       Int
+  price          Int
+  total          Int
+  products       products     @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transactions   transactions @relation(fields: [transaction_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([product_id])
+  @@index([transaction_id])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model transactions {
+  id                 Int                         @id @default(autoincrement())
+  user_id            Int
+  order_date         DateTime                    @db.Timestamp(6)
+  total_amount       Int
+  shipping_address   String
+  shipping_method_id Int
+  order_status       transaction_status_options? @default(pending)
+  payment_status     payment_status_options?     @default(pending)
+  payment_method_id  Int
+  created_at         DateTime?                   @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?                   @default(now()) @db.Timestamp(6)
+  transaction_items  transaction_items[]
+  payment_methods    payment_methods             @relation(fields: [payment_method_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  shipping_methods   shipping_methods            @relation(fields: [shipping_method_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              users                       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([payment_method_id])
+  @@index([shipping_method_id])
+  @@index([user_id])
+}
+
+model users {
+  id                Int             @id @default(autoincrement())
+  fullname          String          @db.VarChar(255)
+  nickname          String?         @db.VarChar(25)
+  email             String          @db.VarChar(255)
+  account_status    Boolean?        @default(true)
+  registration_date DateTime?       @db.Date
+  last_login_date   DateTime?       @db.Timestamp(6)
+  address           String?
+  password          String
+  discount_user     discount_user[]
+  reviews           reviews[]
+  transactions      transactions[]
+}
+
+model variants {
+  id               Int              @id @default(autoincrement())
+  product_id       Int
+  name             String           @db.VarChar(100)
+  sku              String?          @db.VarChar(100)
+  price            Int
+  discounted_price Int?
+  stock_quantity   Int
+  weight           Int?
+  material         String?          @db.VarChar(225)
+  products         products         @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  variant_images   variant_images[]
+
+  @@index([product_id])
+}
+
+model variant_images {
+  id         Int      @id @default(autoincrement())
+  file_name  String   @db.VarChar
+  variant_id Int
+  variants   variants @relation(fields: [variant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model product_shipping_methods {
+  id                 Int              @id @default(autoincrement())
+  product_id         Int
+  shipping_method_id Int
+  products           products         @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shipping_methods   shipping_methods @relation(fields: [shipping_method_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tags {
+  id           Int            @id @default(autoincrement())
+  tag          String         @unique @db.VarChar(45)
+  product_tags product_tags[]
+}
+
+enum discount_status {
+  active
+  inactive
+  expired
+}
+
+enum discount_type {
+  percentage
+  fixed_amount
+}
+
+enum payment_status_options {
+  paid
+  pending
+  failed
+  success
+}
+
+enum transaction_status_options {
+  pending
+  processing
+  shipped
+  delivered
+  canceled
+}

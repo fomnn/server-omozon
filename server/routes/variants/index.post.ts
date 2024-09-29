@@ -20,7 +20,6 @@ export default eventHandler(async (event) => {
     const uuidV4 = randomUUID()
     const imageExt = product_image.type.split('/')[1]
     const imageName = `${product_id}_${uuidV4}.${imageExt}`
-    await useStorage('fs').setItemRaw(`variants/${imageName}`, Buffer.from(await product_image.arrayBuffer()))
 
     const formData = new FormData()
     formData.append('image', product_image)

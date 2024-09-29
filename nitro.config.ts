@@ -6,9 +6,6 @@ export default defineNitroConfig({
     '/**': {
       cors: true,
     },
-  }, 
-  imports: {
-    autoImport: true,
   },
 
   runtimeConfig: {
